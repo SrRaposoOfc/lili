@@ -1,9 +1,9 @@
 const nacl = require('tweetnacl');
-const { resetCounters, RESET_CUSTOM_ID, V2_FLAG, EPHEMERAL } = require('./_discord.js');
+const { resetCounters, RESET_CUSTOM_ID, EPHEMERAL } = require('./_discord.js');
 
 const BASE = 'https://discord.com/api/v10';
 const PUBLIC_KEY = process.env.PUBLIC_KEY;
-const APP_ID = process.env.CLIENT_ID;
+const APP_ID = process.env.CLIENT_ID || '1549372190149971988';
 
 function readRawBody(req) {
   return new Promise((resolve, reject) => {
@@ -30,29 +30,20 @@ function isValidSignature(signature, timestamp, rawBuf) {
   }
 }
 
-function textMessage(text) {
-  return {
-    flags: EPHEMERAL | V2_FLAG,
-    components: [{ type: 10, content: text }],
-  };
+function textFollowup(text) {
+  return { flags: EPHEMERAL, content: text };
 }
 
-function resetConfirmation() {
+function resetConfirmationFollowup() {
   return {
-    flags: EPHEMERAL | V2_FLAG,
+    flags: EPHEMERAL,
+    content: '**🔄 Resetar contador?**\nTem certeza que quer zerar o contador de visitas? Essa ação não pode ser desfeita.',
     components: [
       {
-        type: 17,
-        accent_color: 10038562,
+        type: 1,
         components: [
-          { type: 10, content: '**🔄 Resetar contador?**\nTem certeza que quer zerar o contador de visitas? Essa ação não pode ser desfeita.' },
-          {
-            type: 1,
-            components: [
-              { type: 2, style: 4, custom_id: 'confirm_reset', label: 'Sim, resetar' },
-              { type: 2, style: 2, custom_id: 'cancel_reset', label: 'Cancelar' },
-            ],
-          },
+          { type: 2, style: 4, custom_id: 'confirm_reset', label: 'Sim, resetar' },
+          { type: 2, style: 2, custom_id: 'cancel_reset', label: 'Cancelar' },
         ],
       },
     ],
@@ -70,17 +61,17 @@ async function sendFollowup(token, payload) {
 
 async function handleComponent(customId, token) {
   if (customId === RESET_CUSTOM_ID) {
-    return sendFollowup(token, resetConfirmation());
+    return sendFollowup(token, resetConfirmationFollowup());
   }
   if (customId === 'confirm_reset') {
     const r = await resetCounters();
     if (r.ok) {
-      return sendFollowup(token, textMessage('✅ Contador resetado com sucesso!'));
+      return sendFollowup(token, textFollowup('✅ Contador resetado com sucesso!'));
     }
-    return sendFollowup(token, textMessage('⚠️ Não consegui resetar agora. Tenta de novo.'));
+    return sendFollowup(token, textFollowup('⚠️ Não consegui resetar agora. Tenta de novo.'));
   }
   if (customId === 'cancel_reset') {
-    return sendFollowup(token, textMessage('Cancelado. Nenhum valor foi alterado.'));
+    return sendFollowup(token, textFollowup('Cancelado. Nenhum valor foi alterado.'));
   }
   return false;
 }
@@ -133,7 +124,7 @@ module.exports = async function handler(req, res) {
         await handleComponent(cid, token);
       } catch (e) {
         try {
-          await sendFollowup(token, textMessage('❌ Algo deu errado: ' + String(e.message)));
+          await sendFollowup(token, textFollowup('❌ Algo deu errado: ' + String(e.message)));
         } catch (e2) {}
       }
     }

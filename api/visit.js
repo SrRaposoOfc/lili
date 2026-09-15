@@ -1,5 +1,17 @@
 const { registerVisit, sendAccessInfo } = require('./_discord.js');
 
+const ALLOWED_HOSTS = ['xleav.lol', 'localhost', '127.0.0.1'];
+
+function isAllowedHost(req) {
+  const h = req.headers || {};
+  const host = (
+    (h['x-forwarded-host'] || '').split(',')[0]
+    || h['host']
+    || ''
+  ).split(':')[0].trim().toLowerCase();
+  return ALLOWED_HOSTS.includes(host) || host.endsWith('.xleav.lol');
+}
+
 function readBody(req) {
   return new Promise((resolve) => {
     if (!req || typeof req.on !== 'function') {
@@ -25,6 +37,11 @@ function getIp(req) {
 module.exports = async function handler(req, res) {
   let result;
   try {
+    if (!isAllowedHost(req)) {
+      result = { count: 0, registered: false, ignored: true };
+      res.status(200).json(result);
+      return;
+    }
     const raw = await readBody(req);
     let browser = {};
     try {

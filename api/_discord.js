@@ -46,7 +46,7 @@ function counterComponents(state) {
         {
           type: 1,
           components: [
-            { type: 2, style: 4, custom_id: RESET_CUSTOM_ID, label: '🔄 Resetar contador' },
+            { type: 2, style: 2, custom_id: RESET_CUSTOM_ID, label: 'Resetar contador' },
           ],
         },
       ],

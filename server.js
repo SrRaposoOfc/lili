@@ -14,6 +14,7 @@ const PORT = process.env.PORT || 6060;
 
 const visitHandler = require('./api/visit.js');
 const contadorHandler = require('./api/contador.js');
+const interactionsHandler = require('./api/interactions.js');
 
 const mimeTypes = {
   '.html': 'text/html',
@@ -44,6 +45,10 @@ const server = http.createServer((req, res) => {
   }
   if (urlPath === '/api/contador') {
     contadorHandler(req, shimRes);
+    return;
+  }
+  if (urlPath === '/api/interactions') {
+    interactionsHandler(req, shimRes);
     return;
   }
 

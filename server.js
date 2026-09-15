@@ -36,14 +36,14 @@ function apiRespond(res, code, body) {
 
 const server = http.createServer((req, res) => {
   const urlPath = (req.url || '/').split('?')[0];
-  const shimReq = { method: req.method };
+  const shimRes = { status: (code) => ({ json: (body) => apiRespond(res, code, body) }) };
 
   if (urlPath === '/api/visit') {
-    visitHandler(shimReq, { status: (code) => ({ json: (body) => apiRespond(res, code, body) }) });
+    visitHandler(req, shimRes);
     return;
   }
   if (urlPath === '/api/contador') {
-    contadorHandler(shimReq, { status: (code) => ({ json: (body) => apiRespond(res, code, body) }) });
+    contadorHandler(req, shimRes);
     return;
   }
 

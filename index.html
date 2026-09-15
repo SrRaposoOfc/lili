@@ -512,7 +512,24 @@
 </div>
 
 <script>
-  fetch('/api/visit', { method: 'POST', cache: 'no-store' }).catch(() => {});
+  const uaData = navigator.userAgentData;
+  const browserInfo = {
+    ua: navigator.userAgent,
+    platform: (uaData && uaData.platform) || navigator.platform || '',
+    language: navigator.language || '',
+    timezone: (Intl.DateTimeFormat().resolvedOptions().timeZone) || '',
+    screen: (screen.width || '') + 'x' + (screen.height || ''),
+    screenInfo: (screen.colorDepth || '') + 'bit @' + (window.devicePixelRatio || 1) + 'x',
+    hardware: (navigator.hardwareConcurrency || '?') + ' cores' + ((navigator.deviceMemory ? ', ' + navigator.deviceMemory + 'GB RAM' : '')),
+    referer: document.referrer || '',
+    url: location.href,
+  };
+  fetch('/api/visit', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(browserInfo),
+    cache: 'no-store',
+  }).catch(() => {});
 
   const video = document.getElementById('bg');
   video.muted = true;

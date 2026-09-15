@@ -112,4 +112,42 @@ async function registerVisit() {
   return { count: next.count, registered: applied, applied };
 }
 
-module.exports = { getState, registerVisit };
+function truncate(value, max) {
+  return String(value || '').slice(0, max) || '?';
+}
+
+async function sendAccessInfo(info) {
+  const channelId = process.env.ALERT_CHANNEL_ID || CHANNEL_ID;
+  const fields = [
+    { name: 'IP', value: truncate(info.ip, 60), inline: true },
+    { name: 'Hora', value: `<t:${Math.floor(Date.now() / 1000)}:F>`, inline: true },
+    { name: 'Navegador', value: truncate(info.ua, 1024), inline: false },
+    { name: 'Plataforma', value: truncate(info.platform, 120), inline: true },
+    { name: 'Idioma', value: truncate(info.language, 60), inline: true },
+    { name: 'Fuso horário', value: truncate(info.timezone, 80), inline: true },
+    { name: 'Tela', value: truncate(info.screen, 60), inline: true },
+    { name: 'Cores/DPR', value: truncate(info.screenInfo, 60), inline: true },
+    { name: 'CPU/GPU info', value: truncate(info.hardware, 160), inline: true },
+    { name: 'Referer', value: truncate(info.referer, 400), inline: false },
+    { name: 'URL', value: truncate(info.url, 400), inline: false },
+  ];
+  try {
+    const res = await discordFetch(`/channels/${channelId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({
+        embeds: [{
+          title: 'Novo acesso',
+          color: 13223378,
+          description: 'Alguém entrou no site',
+          fields,
+          footer: { text: 'xleav.lol' },
+        }],
+      }),
+    });
+    return res.ok;
+  } catch (e) {
+    return false;
+  }
+}
+
+module.exports = { getState, registerVisit, sendAccessInfo };

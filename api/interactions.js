@@ -1,9 +1,7 @@
 const nacl = require('tweetnacl');
 const { resetCounters, RESET_CUSTOM_ID, EPHEMERAL } = require('./_discord.js');
 
-const BASE = 'https://discord.com/api/v10';
 const PUBLIC_KEY = process.env.PUBLIC_KEY;
-const APP_ID = process.env.CLIENT_ID || '1549372190149971988';
 
 function readRawBody(req) {
   return new Promise((resolve, reject) => {
@@ -30,15 +28,17 @@ function isValidSignature(signature, timestamp, rawBuf) {
   }
 }
 
-function textFollowup(text) {
-  return { flags: EPHEMERAL, content: text };
+function ephemeralMessage(content, components) {
+  const data = { flags: EPHEMERAL };
+  if (content) data.content = content;
+  if (components) data.components = components;
+  return { type: 4, data };
 }
 
-function resetConfirmationFollowup() {
-  return {
-    flags: EPHEMERAL,
-    content: '**🔄 Resetar contador?**\nTem certeza que quer zerar o contador de visitas? Essa ação não pode ser desfeita.',
-    components: [
+function resetConfirmation() {
+  return ephemeralMessage(
+    '**🔄 Resetar contador?**\nTem certeza que quer zerar o contador de visitas? Essa ação não pode ser desfeita.',
+    [
       {
         type: 1,
         components: [
@@ -46,34 +46,8 @@ function resetConfirmationFollowup() {
           { type: 2, style: 2, custom_id: 'cancel_reset', label: 'Cancelar' },
         ],
       },
-    ],
-  };
-}
-
-async function sendFollowup(token, payload) {
-  const res = await fetch(`${BASE}/webhooks/${APP_ID}/${token}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  return res.ok;
-}
-
-async function handleComponent(customId, token) {
-  if (customId === RESET_CUSTOM_ID) {
-    return sendFollowup(token, resetConfirmationFollowup());
-  }
-  if (customId === 'confirm_reset') {
-    const r = await resetCounters();
-    if (r.ok) {
-      return sendFollowup(token, textFollowup('✅ Contador resetado com sucesso!'));
-    }
-    return sendFollowup(token, textFollowup('⚠️ Não consegui resetar agora. Tenta de novo.'));
-  }
-  if (customId === 'cancel_reset') {
-    return sendFollowup(token, textFollowup('Cancelado. Nenhum valor foi alterado.'));
-  }
-  return false;
+    ]
+  );
 }
 
 module.exports = async function handler(req, res) {
@@ -116,19 +90,35 @@ module.exports = async function handler(req, res) {
   }
 
   if (body.type === 3) {
-    res.status(200).json({ type: 5 });
-    const token = body.token;
     const cid = body.data && body.data.custom_id;
-    if (token && cid) {
-      try {
-        await handleComponent(cid, token);
-      } catch (e) {
-        try {
-          await sendFollowup(token, textFollowup('❌ Algo deu errado: ' + String(e.message)));
-        } catch (e2) {}
-      }
+
+    if (cid === RESET_CUSTOM_ID) {
+      res.status(200).json(resetConfirmation());
+      return;
     }
-    return;
+
+    if (cid === 'confirm_reset') {
+      let r;
+      try {
+        r = await Promise.race([
+          resetCounters(),
+          new Promise((resolve) => setTimeout(() => resolve({ ok: false, error: 'timeout' }), 2500)),
+        ]);
+      } catch (e) {
+        r = { ok: false, error: String(e.message) };
+      }
+      if (r.ok) {
+        res.status(200).json(ephemeralMessage('✅ Contador resetado com sucesso!'));
+      } else {
+        res.status(200).json(ephemeralMessage('⚠️ Não consegui resetar agora. Tenta de novo.'));
+      }
+      return;
+    }
+
+    if (cid === 'cancel_reset') {
+      res.status(200).json(ephemeralMessage('Cancelado. Nenhum valor foi alterado.'));
+      return;
+    }
   }
 
   res.status(200).json({ type: 1 });

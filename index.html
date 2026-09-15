@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Lilith Goth</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,500;1,9..144,600&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --silver: #c9c9d2;
+      --silver-soft: #e9e9ee;
+      --smoke: #f4f4f6;
+      --ink: #141416;
+      --glass: rgba(255,255,255,0.10);
+      --glass-strong: rgba(255,255,255,0.16);
+      --glass-border: rgba(255,255,255,0.28);
+      --shadow: rgba(0,0,0,0.45);
+    }
+
+    *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+    html, body{
+      margin:0; padding:0;
+      height:100%;
+      overflow:hidden;
+      overscroll-behavior:none;
+      touch-action:none;
+      background:var(--ink);
+      font-family:'Poppins', sans-serif;
+    }
+
+    .scene{
+      position:relative;
+      width:100vw;
+      height:100svh;
+      height:100dvh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+      background:var(--ink);
+    }
+
+    video#bg{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      filter:grayscale(1) contrast(1.05) brightness(0.85);
+      z-index:0;
+      pointer-events:none;
+    }
+
+    .fog{
+      position:absolute;
+      inset:0;
+      z-index:1;
+      pointer-events:none;
+      background:
+        linear-gradient(180deg, rgba(12,12,14,0.55) 0%, rgba(12,12,14,0.35) 40%, rgba(12,12,14,0.8) 100%);
+    }
+
+    .content{
+      position:relative;
+      z-index:5;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      text-align:center;
+      padding:0 24px;
+      max-width:560px;
+      opacity:0;
+      transform:translateY(16px);
+      animation:fadeUp 1s ease forwards;
+      animation-delay:.15s;
+    }
+
+    .name{
+      margin:0;
+      font-family:'Fraunces', serif;
+      font-style:italic;
+      font-weight:500;
+      font-size:clamp(52px, 14vw, 92px);
+      line-height:1;
+      color:var(--smoke);
+      text-shadow:0 4px 24px var(--shadow);
+      letter-spacing:.5px;
+      background:linear-gradient(180deg, #ffffff 0%, #b9b9c4 100%);
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+      background-clip:text;
+    }
+
+    .tagline{
+      margin:12px 0 32px;
+      font-size:13px;
+      color:rgba(244,244,246,0.85);
+      font-weight:300;
+      letter-spacing:.4px;
+      text-shadow:0 2px 10px var(--shadow);
+    }
+
+    .insta-wrap{
+      position:relative;
+      display:inline-flex;
+      flex-direction:column;
+      align-items:center;
+    }
+    .insta-wrap .doguinho{
+      position:relative;
+      z-index:2;
+      width:140px;
+      margin-bottom:-16px;
+      transform:translateY(-4px);
+      pointer-events:none;
+      user-select:none;
+      filter:grayscale(1) drop-shadow(0 3px 10px var(--shadow));
+    }
+    .insta-wrap .doguinho img{
+      width:100%;
+      height:auto;
+      display:block;
+    }
+    .insta-btn{
+      position:relative;
+      z-index:1;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:12px 26px;
+      border-radius:999px;
+      text-decoration:none;
+      color:var(--smoke);
+      background:var(--glass);
+      border:1px solid var(--glass-border);
+      backdrop-filter:blur(16px) saturate(140%);
+      -webkit-backdrop-filter:blur(16px) saturate(140%);
+      box-shadow:0 8px 24px var(--shadow), inset 0 1px 0 rgba(255,255,255,.18);
+      font-size:13px;
+      font-weight:400;
+      letter-spacing:.3px;
+      transition:background .3s ease, border-color .3s ease, transform .3s ease;
+    }
+    .insta-btn:hover{
+      background:var(--glass-strong);
+      border-color:rgba(255,255,255,0.5);
+      transform:translateY(-2px);
+    }
+    .insta-btn:active{ transform:translateY(0) scale(.97); }
+    .insta-btn svg{ width:15px; height:15px; }
+
+    /* ---------- CARROSSEL ---------- */
+    .carousel{
+      position:absolute;
+      bottom:22px;
+      right:18px;
+      z-index:6;
+      width:132px;
+      opacity:0;
+      animation:fadeUp .9s ease forwards;
+      animation-delay:.85s;
+    }
+    .carousel .kuromi{
+      position:absolute;
+      left:50%;
+      top:-50px;
+      transform:translateX(-50%);
+      width:76px;
+      z-index:3;
+      pointer-events:auto;
+      cursor:pointer;
+      user-select:none;
+      filter:grayscale(1) drop-shadow(0 3px 10px var(--shadow));
+      transition:transform .3s ease;
+    }
+    .carousel .kuromi:active{ transform:translateX(-50%) scale(.92); }
+    .carousel .kuromi img{
+      width:100%;
+      height:auto;
+      display:block;
+    }
+    .carousel-frame{
+      position:relative;
+      width:100%;
+      height:164px;
+      border-radius:18px;
+      overflow:hidden;
+      border:1px solid var(--glass-border);
+      box-shadow:0 8px 24px var(--shadow), inset 0 1px 0 rgba(255,255,255,.18);
+      background:var(--glass);
+      backdrop-filter:blur(18px) saturate(140%);
+      -webkit-backdrop-filter:blur(18px) saturate(140%);
+      padding:6px;
+    }
+    .carousel-track{
+      display:flex;
+      width:100%;
+      height:100%;
+      transition:transform .5s cubic-bezier(.2,.8,.2,1);
+      will-change:transform;
+    }
+    .carousel-slide{
+      flex:0 0 100%;
+      height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .carousel-slide img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      border-radius:13px;
+      display:block;
+      filter:grayscale(1);
+      background:#1a1a1d;
+    }
+    .carousel-slide .fallback{
+      color:rgba(255,255,255,0.45);
+      font-size:11px;
+      text-align:center;
+      padding:10px;
+    }
+    .car-dots{
+      display:flex;
+      justify-content:center;
+      gap:5px;
+      margin-top:8px;
+    }
+    .car-dots span{
+      width:5px;
+      height:5px;
+      border-radius:50%;
+      background:rgba(255,255,255,0.35);
+      transition:background .3s ease, transform .3s ease;
+    }
+    .car-dots span.active{
+      background:var(--silver);
+      transform:scale(1.35);
+    }
+
+    /* ---------- FOTO INFERIOR ESQUERDA ---------- */
+    .bottom-left-img{
+      position:absolute;
+      bottom:18px;
+      left:18px;
+      z-index:6;
+      width:128px;
+      height:186px;
+      border-radius:18px;
+      overflow:hidden;
+      border:1px solid var(--glass-border);
+      box-shadow:0 8px 24px var(--shadow), inset 0 1px 0 rgba(255,255,255,.18);
+      background:var(--glass);
+      backdrop-filter:blur(18px) saturate(140%);
+      -webkit-backdrop-filter:blur(18px) saturate(140%);
+      padding:6px;
+      opacity:0;
+      animation:fadeUp .9s ease forwards;
+      animation-delay:.85s;
+    }
+    .bottom-left-img img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      border-radius:13px;
+      display:block;
+      filter:grayscale(1);
+      background:#1a1a1d;
+    }
+
+    .bottom-left-logo{
+      position:absolute;
+      top:20px;
+      left:20px;
+      z-index:6;
+      width:130px;
+      opacity:0;
+      animation:fadeUp .9s ease forwards;
+      animation-delay:.85s;
+    }
+    .bottom-left-logo .shadow{
+      position:absolute;
+      inset:-14px;
+      width:calc(100% + 28px);
+      filter:grayscale(1);
+      z-index:0;
+      pointer-events:none;
+    }
+    .bottom-left-logo .main{
+      position:relative;
+      z-index:1;
+      width:100%;
+      height:auto;
+      display:block;
+      filter:grayscale(1);
+    }
+
+    .bottom-left-rosa{
+      position:absolute;
+      bottom:-28px;
+      left:20px;
+      z-index:6;
+      width:clamp(120px, 40vw, 60vw);
+      opacity:0;
+      animation:fadeUp .9s ease forwards;
+      animation-delay:.85s;
+    }
+    .bottom-left-rosa img{
+      width:100%;
+      height:auto;
+      display:block;
+    }
+    .bottom-left-rosa .foxy{
+      position:absolute;
+      bottom:14px;
+      left:52%;
+      transform:translateX(-50%);
+      width:60%;
+      z-index:2;
+      pointer-events:auto;
+      user-select:none;
+      cursor:pointer;
+      filter:grayscale(1) drop-shadow(0 3px 10px var(--shadow));
+    }
+    .bottom-left-rosa .foxy img{
+      width:100%;
+      height:auto;
+      display:block;
+    }
+
+    .foxy-badge{
+      position:absolute;
+      left:50%;
+      bottom:calc(100% + 10px);
+      transform:translate(-50%, 10px);
+      z-index:7;
+      white-space:nowrap;
+      padding:8px 14px;
+      border-radius:12px;
+      font-size:12px;
+      font-weight:400;
+      letter-spacing:.3px;
+      color:var(--smoke);
+      background:var(--glass-strong);
+      border:1px solid var(--glass-border);
+      backdrop-filter:blur(18px) saturate(140%);
+      -webkit-backdrop-filter:blur(18px) saturate(140%);
+      box-shadow:0 8px 24px var(--shadow), inset 0 1px 0 rgba(255,255,255,.18);
+      opacity:0;
+      visibility:hidden;
+      transition:opacity .25s ease, transform .25s ease, visibility .25s;
+      pointer-events:none;
+    }
+    .foxy-badge.show{
+      opacity:1;
+      visibility:visible;
+      transform:translate(-50%, 0);
+    }
+
+    /* ---------- CONTADOR ---------- */
+    .counter-badge{
+      position:fixed;
+      top:20px;
+      right:20px;
+      z-index:10;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:4px;
+      min-width:108px;
+      padding:14px 20px;
+      border-radius:18px;
+      color:var(--smoke);
+      background:var(--glass);
+      border:1px solid var(--glass-border);
+      backdrop-filter:blur(18px) saturate(140%);
+      -webkit-backdrop-filter:blur(18px) saturate(140%);
+      box-shadow:0 8px 24px var(--shadow), inset 0 1px 0 rgba(255,255,255,.18);
+      opacity:0;
+      visibility:hidden;
+      transform:translateY(-10px) scale(.95);
+      transition:opacity .35s ease, transform .35s cubic-bezier(.2,.8,.2,1), visibility .35s;
+      pointer-events:none;
+    }
+    .counter-badge.show{
+      opacity:1;
+      visibility:visible;
+      transform:translateY(0) scale(1);
+    }
+    .counter-label{
+      font-size:10px;
+      font-weight:300;
+      letter-spacing:3px;
+      text-transform:uppercase;
+      color:rgba(244,244,246,0.75);
+    }
+    .counter-divider{
+      width:26px;
+      height:1px;
+      background:linear-gradient(90deg, transparent, var(--silver), transparent);
+    }
+    .counter-value{
+      font-family:'Fraunces', serif;
+      font-style:italic;
+      font-weight:600;
+      font-size:30px;
+      line-height:1;
+      background:linear-gradient(180deg, #ffffff 0%, #b9b9c4 100%);
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+      background-clip:text;
+      text-shadow:0 4px 18px var(--shadow);
+    }
+
+    /* ---------- ANIMAÇÕES ---------- */
+    @keyframes fadeUp{ to{ opacity:1; transform:translateY(0); } }
+
+    @media (prefers-reduced-motion: reduce){
+      .content, .carousel, .bottom-left-img, .bottom-left-logo, .bottom-left-rosa{
+        animation:none !important;
+        opacity:1 !important;
+        transform:none !important;
+      }
+    }
+
+    @media (min-width: 1024px){
+      .name{ font-size:clamp(96px, 20vw, 176px); }
+      .tagline{ font-size:20px; margin:16px 0 40px; }
+      .insta-btn{ font-size:18px; padding:16px 36px; }
+      .insta-btn svg{ width:20px; height:20px; }
+      .insta-wrap .doguinho{ width:200px; margin-bottom:-24px; transform:translateY(-3px); }
+      .carousel{ width:250px; bottom:32px; right:32px; }
+      .carousel .kuromi{ width:120px; top:-120px; }
+      .carousel-frame{ height:312px; border-radius:24px; padding:10px; }
+      .carousel-slide img{ border-radius:18px; }
+      .car-dots span{ width:7px; height:7px; }
+      .bottom-left-img{ width:230px; height:334px; bottom:32px; left:32px; }
+      .bottom-left-logo{ width:200px; top:32px; left:32px; }
+      .bottom-left-rosa{ width:clamp(200px, 18vw, 280px); bottom:-20px; left:32px; }
+    }
+
+    @media (max-width: 380px){
+      .carousel{ width:110px; }
+      .carousel .kuromi{ width:68px; top:-55px; }
+      .carousel-frame{ height:138px; }
+      .bottom-left-img{ width:110px; height:160px; bottom:14px; left:14px; }
+      .bottom-left-logo{ width:104px; top:14px; left:14px; }
+      .bottom-left-rosa{ width:clamp(110px, 50vw, 60vw); bottom:-22px; left:14px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="scene">
+  <video id="bg" autoplay muted loop playsinline webkit-playsinline preload="auto">
+    <source src="data/background.mp4" type="video/mp4">
+  </video>
+  <div class="fog"></div>
+
+  <div class="counter-badge" id="counterBadge">
+    <span class="counter-label">Acessos</span>
+    <span class="counter-divider"></span>
+    <span class="counter-value" id="counterValue">0</span>
+  </div>
+
+  <main class="content">
+    <h1 class="name">Lilith<br>Goth</h1>
+    <p class="tagline">Vivendo para mim pois já vivi muito pelos outros.</p>
+
+    <div class="insta-wrap">
+      <div class="doguinho">
+        <img src="data/doguinho.png" alt="Doguinho">
+      </div>
+      <a class="insta-btn" href="https://www.instagram.com/x_leavret="_blank" rel="noopener noreferrer">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="2" width="20" height="20" rx="6" stroke="currentColor" stroke-width="2"/>
+        <circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="2"/>
+        <circle cx="17.4" cy="6.6" r="1.15" fill="currentColor"/>
+      </svg>
+      @lilithgoth
+    </a>
+    </div>
+  </main>
+
+  <div class="carousel">
+    <div class="kuromi" id="kuromi">
+      <img src="data/kuromi.png" alt="Kuromi">
+    </div>
+    <div class="carousel-frame">
+      <div class="carousel-track" id="carouselTrack"></div>
+    </div>
+    <div class="car-dots" id="carDots"></div>
+  </div>
+
+  <div class="bottom-left-logo">
+    <img class="shadow" src="data/monster.png" alt="">
+    <img class="main" src="data/white.png" alt="White">
+  </div>
+
+  <div class="bottom-left-rosa">
+    <img src="data/rosa.png" alt="Rosa">
+    <div class="foxy" id="foxy">
+      <img src="data/foxy.png" alt="Foxy">
+      <div class="foxy-badge" id="foxyBadge">Made by Raposo</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  fetch('/api/visit', { method: 'POST', cache: 'no-store' }).catch(() => {});
+
+  const video = document.getElementById('bg');
+  video.muted = true;
+  video.play().catch(() => {});
+  document.addEventListener('touchstart', () => {
+    video.muted = true;
+    video.play().catch(() => {});
+  }, { once: true });
+
+  const kuromi = document.getElementById('kuromi');
+  kuromi.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const badge = document.getElementById('counterBadge');
+    badge.classList.toggle('show');
+    if (badge.classList.contains('show')) {
+      fetch('/api/contador')
+        .then(r => r.json())
+        .then(d => {
+          const el = document.getElementById('counterValue');
+          const target = d.count;
+          const startTime = performance.now();
+          const duration = 700;
+          function tick(now) {
+            const t = Math.min(1, (now - startTime) / duration);
+            const eased = 1 - Math.pow(1 - t, 3);
+            el.textContent = Math.round(eased * target);
+            if (t < 1) requestAnimationFrame(tick);
+          }
+          el.textContent = 0;
+          requestAnimationFrame(tick);
+        })
+        .catch(() => {});
+    }
+  });
+
+  const foxy = document.getElementById('foxy');
+  const badge = document.getElementById('foxyBadge');
+  const isTouch = 'ontouchstart' in window;
+
+  function showBadge(on){
+    if (on){
+      badge.classList.add('show');
+    } else {
+      badge.classList.remove('show');
+    }
+  }
+
+  if (isTouch){
+    foxy.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const willOpen = !badge.classList.contains('show');
+      document.querySelectorAll('.foxy-badge.show').forEach(b => b.classList.remove('show'));
+      if (willOpen) badge.classList.add('show');
+    });
+    document.addEventListener('click', (e) => {
+      if (!foxy.contains(e.target)) showBadge(false);
+    });
+    document.addEventListener('touchstart', (e) => {
+      if (!foxy.contains(e.target)) showBadge(false);
+    });
+  } else {
+    foxy.addEventListener('mouseenter', () => showBadge(true));
+    foxy.addEventListener('mouseleave', () => showBadge(false));
+  }
+
+  const photos = [
+    "data/IMG-20260913-WA0615.webp",
+    "data/IMG-20260913-WA0616.webp",
+    "data/IMG-20260913-WA0617.webp",
+    "data/IMG-20260913-WA0620.webp",
+    "data/IMG-20260913-WA0622.webp",
+    "data/IMG-20260913-WA0627.webp",
+    "data/IMG-20260913-WA0628.webp",
+    "data/IMG-20260913-WA0630.webp",
+    "data/IMG-20260913-WA0631.webp",
+    "data/IMG-20260913-WA0632.webp",
+    "data/IMG-20260913-WA0633.webp",
+    "data/IMG-20260913-WA0634.webp"
+  ];
+
+  const track = document.getElementById('carouselTrack');
+  const dotsWrap = document.getElementById('carDots');
+  let current = 0;
+
+  photos.forEach((src, i) => {
+    const slide = document.createElement('div');
+    slide.className = 'carousel-slide';
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = 'Foto ' + (i + 1);
+    img.onerror = function(){
+      this.style.display = 'none';
+      const fb = document.createElement('span');
+      fb.className = 'fallback';
+      fb.textContent = 'Foto ' + (i + 1);
+      slide.appendChild(fb);
+    };
+    slide.appendChild(img);
+    track.appendChild(slide);
+
+    const dot = document.createElement('span');
+    if (i === 0) dot.classList.add('active');
+    dotsWrap.appendChild(dot);
+  });
+
+  function goTo(index){
+    current = (index + photos.length) % photos.length;
+    track.style.transform = `translateX(-${current * 100}%)`;
+    [...dotsWrap.children].forEach((d, i) => d.classList.toggle('active', i === current));
+  }
+
+  setInterval(() => goTo(current + 1), 3500);
+
+  function goFullscreen(){
+    const el = document.documentElement;
+    const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+    if (req) req.call(el).catch(() => {});
+  }
+  document.addEventListener('click', goFullscreen, { once: true });
+  document.addEventListener('touchend', goFullscreen, { once: true });
+</script>
+
+</body>
+</html>

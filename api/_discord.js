@@ -52,10 +52,15 @@ function parseState(message) {
 }
 
 async function readOrCreate() {
-  const list = await discordFetch(`/channels/${CHANNEL_ID}/messages?limit=5`);
+  const list = await discordFetch(`/channels/${CHANNEL_ID}/messages?limit=10`);
   if (list.ok) {
     const messages = await list.json();
-    const mine = messages.find((m) => m.author && m.author.id === BOT_ID && (m.embeds || []).length > 0);
+    const mine = messages.find(
+      (m) =>
+        m.author &&
+        m.author.id === BOT_ID &&
+        (m.embeds || []).some((e) => (e.fields || []).some((f) => f.name === 'Visitas'))
+    );
     if (mine) return mine;
   }
   const created = await discordFetch(`/channels/${CHANNEL_ID}/messages`, {

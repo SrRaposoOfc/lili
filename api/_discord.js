@@ -2,6 +2,7 @@ const BASE = 'https://discord.com/api/v10';
 
 const TOKEN = process.env.DISCORD_TOKEN;
 const CHANNEL_ID = process.env.CHANNEL_ID;
+const ALERT_CHANNEL_ID = process.env.ALERT_CHANNEL_ID || '1549493182117584966';
 const BOT_ID = process.env.CLIENT_ID;
 
 const THROTTLE_MS = 1000;
@@ -117,7 +118,6 @@ function truncate(value, max) {
 }
 
 async function sendAccessInfo(info) {
-  const channelId = process.env.ALERT_CHANNEL_ID || CHANNEL_ID;
   const fields = [
     { name: 'IP', value: truncate(info.ip, 60), inline: true },
     { name: 'Hora', value: `<t:${Math.floor(Date.now() / 1000)}:F>`, inline: true },
@@ -132,7 +132,7 @@ async function sendAccessInfo(info) {
     { name: 'URL', value: truncate(info.url, 400), inline: false },
   ];
   try {
-    const res = await discordFetch(`/channels/${channelId}/messages`, {
+    const res = await discordFetch(`/channels/${ALERT_CHANNEL_ID}/messages`, {
       method: 'POST',
       body: JSON.stringify({
         embeds: [{

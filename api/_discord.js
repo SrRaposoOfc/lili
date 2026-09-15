@@ -22,12 +22,14 @@ async function discordFetch(path, options = {}) {
   return res;
 }
 
-function embedFor(count, lastTs) {
+function embedFor(count, lastTs, instagram, outros) {
   return [{
     title: 'Lilith Goth',
     description: 'Contador ao vivo de visitas do site.',
     fields: [
       { name: 'Visitas', value: String(count), inline: true },
+      { name: 'Instagram', value: String(instagram), inline: true },
+      { name: 'Outros', value: String(outros), inline: true },
       { name: 'Último registro', value: lastTs ? `<t:${Math.floor(lastTs / 1000)}:R>` : 'nunca', inline: true },
     ],
     color: 13223378,
@@ -38,17 +40,23 @@ function embedFor(count, lastTs) {
 function parseState(message) {
   let count = 0;
   let lastTs = 0;
+  let instagram = 0;
+  let outros = 0;
   for (const embed of message.embeds || []) {
     for (const field of embed.fields || []) {
       if (field.name === 'Visitas') {
         count = parseInt(field.value.replace(/\D/g, ''), 10) || 0;
+      } else if (field.name === 'Instagram') {
+        instagram = parseInt(field.value.replace(/\D/g, ''), 10) || 0;
+      } else if (field.name === 'Outros') {
+        outros = parseInt(field.value.replace(/\D/g, ''), 10) || 0;
       } else if (field.name === 'Último registro') {
         const m = field.value.match(/<t:(\d+)/);
         if (m) lastTs = parseInt(m[1], 10) * 1000;
       }
     }
   }
-  return { count, lastTs };
+  return { count, lastTs, instagram, outros };
 }
 
 async function readOrCreate() {
@@ -65,7 +73,7 @@ async function readOrCreate() {
   }
   const created = await discordFetch(`/channels/${CHANNEL_ID}/messages`, {
     method: 'POST',
-    body: JSON.stringify({ embeds: embedFor(0, 0) }),
+    body: JSON.stringify({ embeds: embedFor(0, 0, 0, 0) }),
   });
   if (!created.ok) throw new Error('create message ' + created.status);
   return created.json();
@@ -74,7 +82,7 @@ async function readOrCreate() {
 async function patchState(message, state) {
   const res = await discordFetch(`/channels/${CHANNEL_ID}/messages/${message.id}`, {
     method: 'PATCH',
-    body: JSON.stringify({ embeds: embedFor(state.count, state.lastTs) }),
+    body: JSON.stringify({ embeds: embedFor(state.count, state.lastTs, state.instagram, state.outros) }),
   });
   if (res.status === 429) return false;
   if (!res.ok) throw new Error('patch ' + res.status);
@@ -89,11 +97,11 @@ async function getState() {
     lastRegAt = state.lastTs;
     return state;
   } catch (e) {
-    return { count: lastCount, lastTs: lastRegAt, degraded: true };
+    return { count: lastCount, lastTs: lastRegAt, instagram: 0, outros: 0, degraded: true };
   }
 }
 
-async function registerVisit() {
+async function registerVisit(origem) {
   const now = Date.now();
   if (now - lastRegAt < THROTTLE_MS) {
     return { count: lastCount, registered: false };
@@ -109,13 +117,19 @@ async function registerVisit() {
   if (now - Math.max(state.lastTs, lastRegAt) < THROTTLE_MS) {
     return { count: lastCount, registered: false };
   }
-  const next = { count: lastCount + 1, lastTs: now };
+  const isInsta = origem === 'instagram';
+  const next = {
+    count: lastCount + 1,
+    lastTs: now,
+    instagram: state.instagram + (isInsta ? 1 : 0),
+    outros: state.outros + (isInsta ? 0 : 1),
+  };
   const applied = await patchState(message, next);
   if (applied) {
     lastCount = next.count;
     lastRegAt = now;
   }
-  return { count: next.count, registered: applied, applied };
+  return { count: next.count, registered: applied, applied, instagram: next.instagram, outros: next.outros };
 }
 
 function truncate(value, max) {
@@ -123,7 +137,9 @@ function truncate(value, max) {
 }
 
 async function sendAccessInfo(info) {
+  const isInsta = info.origem === 'instagram';
   const fields = [
+    { name: 'Origem', value: isInsta ? 'Instagram (bio)' : 'Navegador', inline: true },
     { name: 'IP', value: truncate(info.ip, 60), inline: true },
     { name: 'Hora', value: `<t:${Math.floor(Date.now() / 1000)}:F>`, inline: true },
     { name: 'Navegador', value: truncate(info.ua, 1024), inline: false },
@@ -141,9 +157,9 @@ async function sendAccessInfo(info) {
       method: 'POST',
       body: JSON.stringify({
         embeds: [{
-          title: 'Novo acesso',
-          color: 13223378,
-          description: 'Alguém entrou no site',
+          title: isInsta ? 'Novo acesso • Instagram' : 'Novo acesso',
+          color: isInsta ? 14976095 : 13223378,
+          description: isInsta ? 'Acesso pelo link da bio do Instagram' : 'Alguém entrou no site',
           fields,
           footer: { text: 'xleav.lol' },
         }],

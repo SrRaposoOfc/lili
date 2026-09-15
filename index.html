@@ -512,8 +512,12 @@
 </div>
 
 <script>
+  const utmParams = new URLSearchParams(location.search);
+  const utmSource = utmParams.get('utm_source') || '';
+
   const uaData = navigator.userAgentData;
   const browserInfo = {
+    utm_source: utmSource,
     ua: navigator.userAgent,
     platform: (uaData && uaData.platform) || navigator.platform || '',
     language: navigator.language || '',
@@ -530,6 +534,10 @@
     body: JSON.stringify(browserInfo),
     cache: 'no-store',
   }).catch(() => {});
+
+  if (utmSource) {
+    history.replaceState(null, '', location.pathname);
+  }
 
   const video = document.getElementById('bg');
   video.muted = true;

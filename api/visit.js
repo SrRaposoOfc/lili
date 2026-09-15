@@ -34,8 +34,10 @@ module.exports = async function handler(req, res) {
     }
 
     const h = req.headers || {};
+    const origem = browser.utm_source === 'instagram' ? 'instagram' : 'navegador';
     const info = {
       ip: getIp(req),
+      origem,
       ua: browser.ua || h['user-agent'],
       platform: browser.platform,
       language: browser.language,
@@ -48,7 +50,7 @@ module.exports = async function handler(req, res) {
     };
 
     await Promise.allSettled([
-      registerVisit(),
+      registerVisit(origem),
       sendAccessInfo(info),
     ]).then(([reg]) => {
       result = reg.value || { count: 0, registered: false };

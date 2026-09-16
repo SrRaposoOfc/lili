@@ -25,10 +25,11 @@ async function discordFetch(path, options = {}) {
   return res;
 }
 
-function statsText(count, instagram, outros, lastTs) {
+function statsText(count, instagram, discord, outros, lastTs) {
   return [
     `**Visitas:** ${count}`,
     `**Instagram:** ${instagram}`,
+    `**Discord:** ${discord}`,
     `**Outros:** ${outros}`,
     `**Último registro:** ${lastTs ? `<t:${Math.floor(lastTs / 1000)}:R>` : 'nunca'}`,
   ].join('\n');
@@ -42,7 +43,7 @@ function counterComponents(state) {
       components: [
         { type: 10, content: '# 📊 Métricas de Visitas' },
         { type: 14 },
-        { type: 10, content: statsText(state.count, state.instagram, state.outros, state.lastTs) },
+        { type: 10, content: statsText(state.count, state.instagram, state.discord, state.outros, state.lastTs) },
         {
           type: 1,
           components: [
@@ -58,6 +59,7 @@ function parseState(message) {
   let count = 0;
   let lastTs = 0;
   let instagram = 0;
+  let discord = 0;
   let outros = 0;
 
   for (const embed of message.embeds || []) {
@@ -66,6 +68,8 @@ function parseState(message) {
         count = parseInt(field.value.replace(/\D/g, ''), 10) || 0;
       } else if (field.name === 'Instagram') {
         instagram = parseInt(field.value.replace(/\D/g, ''), 10) || 0;
+      } else if (field.name === 'Discord') {
+        discord = parseInt(field.value.replace(/\D/g, ''), 10) || 0;
       } else if (field.name === 'Outros') {
         outros = parseInt(field.value.replace(/\D/g, ''), 10) || 0;
       } else if (field.name === 'Último registro') {
@@ -91,12 +95,13 @@ function parseState(message) {
     };
     count = num('Visitas');
     instagram = num('Instagram');
+    discord = num('Discord');
     outros = num('Outros');
     const m = text.match(/\*\*Último registro:\*\*\s*<t:(\d+)(?::R|:t|:f|:F|:d|:D)>/);
     if (m) lastTs = parseInt(m[1], 10) * 1000;
   }
 
-  return { count, lastTs, instagram, outros };
+  return { count, lastTs, instagram, discord, outros };
 }
 
 function hasCustomId(comps, customId) {
@@ -130,7 +135,7 @@ async function readOrCreate() {
   }
   const created = await discordFetch(`/channels/${CHANNEL_ID}/messages`, {
     method: 'POST',
-    body: JSON.stringify({ flags: V2_FLAG, components: counterComponents({ count: 0, lastTs: 0, instagram: 0, outros: 0 }) }),
+    body: JSON.stringify({ flags: V2_FLAG, components: counterComponents({ count: 0, lastTs: 0, instagram: 0, discord: 0, outros: 0 }) }),
   });
   if (!created.ok) throw new Error('create message ' + created.status);
   return created.json();
@@ -154,7 +159,7 @@ async function getState() {
     lastRegAt = state.lastTs;
     return state;
   } catch (e) {
-    return { count: lastCount, lastTs: lastRegAt, instagram: 0, outros: 0, degraded: true };
+    return { count: lastCount, lastTs: lastRegAt, instagram: 0, discord: 0, outros: 0, degraded: true };
   }
 }
 
@@ -175,18 +180,20 @@ async function registerVisit(origem) {
     return { count: lastCount, registered: false };
   }
   const isInsta = origem === 'instagram';
+  const isDiscord = origem === 'discord';
   const next = {
     count: lastCount + 1,
     lastTs: now,
     instagram: state.instagram + (isInsta ? 1 : 0),
-    outros: state.outros + (isInsta ? 0 : 1),
+    discord: state.discord + (isDiscord ? 1 : 0),
+    outros: state.outros + (isInsta || isDiscord ? 0 : 1),
   };
   const applied = await patchState(message, next);
   if (applied) {
     lastCount = next.count;
     lastRegAt = now;
   }
-  return { count: next.count, registered: applied, applied, instagram: next.instagram, outros: next.outros };
+  return { count: next.count, registered: applied, applied, instagram: next.instagram, discord: next.discord, outros: next.outros };
 }
 
 async function resetCounters() {
@@ -197,13 +204,13 @@ async function resetCounters() {
     return { ok: false, error: String(e.message) };
   }
   const state = parseState(message);
-  const next = { count: 0, lastTs: state.lastTs, instagram: 0, outros: 0 };
+  const next = { count: 0, lastTs: state.lastTs, instagram: 0, discord: 0, outros: 0 };
   const applied = await patchState(message, next);
   if (applied) {
     lastCount = 0;
     lastRegAt = state.lastTs;
   }
-  return { ok: applied, count: 0, instagram: 0, outros: 0 };
+  return { ok: applied, count: 0, instagram: 0, discord: 0, outros: 0 };
 }
 
 function truncate(value, max) {
@@ -212,8 +219,10 @@ function truncate(value, max) {
 
 async function sendAccessInfo(info) {
   const isInsta = info.origem === 'instagram';
+  const isDiscord = info.origem === 'discord';
+  const origemLabel = isInsta ? 'Instagram (bio)' : (isDiscord ? 'Discord' : 'Navegador');
   const fields = [
-    { name: 'Origem', value: isInsta ? 'Instagram (bio)' : 'Navegador', inline: true },
+    { name: 'Origem', value: origemLabel, inline: true },
     { name: 'IP', value: truncate(info.ip, 60), inline: true },
     { name: 'Hora', value: `<t:${Math.floor(Date.now() / 1000)}:F>`, inline: true },
     { name: 'Navegador', value: truncate(info.ua, 1024), inline: false },
@@ -230,9 +239,9 @@ async function sendAccessInfo(info) {
       method: 'POST',
       body: JSON.stringify({
         embeds: [{
-          title: isInsta ? 'Novo acesso • Instagram' : 'Novo acesso',
-          color: isInsta ? 14976095 : 13223378,
-          description: isInsta ? 'Acesso pelo link da bio do Instagram' : 'Alguém entrou no site',
+          title: isInsta ? 'Novo acesso • Instagram' : (isDiscord ? 'Novo acesso • Discord' : 'Novo acesso'),
+          color: isInsta ? 14976095 : (isDiscord ? 5793266 : 13223378),
+          description: isInsta ? 'Acesso pelo link da bio do Instagram' : (isDiscord ? 'Acesso pelo link do Discord' : 'Alguém entrou no site'),
           fields,
           footer: { text: 'xleav.lol' },
         }],

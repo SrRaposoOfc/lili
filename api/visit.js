@@ -51,7 +51,9 @@ module.exports = async function handler(req, res) {
     }
 
     const h = req.headers || {};
-    const origem = browser.utm_source === 'instagram' ? 'instagram' : 'navegador';
+    const origem = browser.utm_source === 'instagram' ? 'instagram'
+      : browser.utm_source === 'discord' ? 'discord'
+      : 'navegador';
     const info = {
       ip: getIp(req),
       origem,

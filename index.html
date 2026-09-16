@@ -557,7 +557,28 @@
       .bottom-left-rosa{ width:clamp(200px, 18vw, 280px); bottom:-20px; left:32px; }
     }
 
+    @media (max-width: 640px){
+      .player{
+        top:12px;
+        right:12px;
+        gap:8px;
+        padding:6px 10px 6px 7px;
+        border-radius:16px;
+      }
+      .player-play{ width:28px; height:28px; }
+      .player-play svg{ width:12px; height:12px; }
+      .player-wave{ gap:2px; height:20px; }
+      .player-wave span{ width:2px; min-height:3px; }
+      .player-time{ font-size:11px; min-width:24px; }
+      .player-vol{ padding-left:5px; gap:3px; }
+      .player-vol svg{ width:11px; height:11px; }
+      .player-slider{ width:36px; }
+      .counter-badge{ top:62px; }
+    }
+
     @media (max-width: 380px){
+      .player-wave{ display:none; }
+      .player{gap:9px; padding:6px 11px 6px 7px;}
       .carousel{ width:110px; }
       .carousel .kuromi{ width:68px; top:-55px; }
       .carousel-frame{ height:138px; }

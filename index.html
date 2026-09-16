@@ -93,6 +93,12 @@
       -webkit-text-fill-color:transparent;
       background-clip:text;
     }
+    .name-sub{
+      display:block;
+      font-size:clamp(30px, 8vw, 54px);
+      margin-top:-4px;
+      opacity:.92;
+    }
 
     .tagline{
       margin:12px 0 32px;
@@ -431,7 +437,7 @@
       opacity:0;
       transform:translateY(16px);
       animation:fadeUp 1s ease forwards;
-      animation-delay:1.2s;
+      animation-delay:.15s;
     }
     .player-play{
       width:36px;
@@ -532,6 +538,7 @@
 
     @media (min-width: 1024px){
       .name{ font-size:clamp(96px, 20vw, 176px); }
+      .name-sub{ font-size:clamp(56px, 11vw, 104px); margin-top:-8px; }
       .tagline{ font-size:20px; margin:16px 0 40px; }
       .insta-btn{ font-size:18px; padding:16px 36px; }
       .insta-btn svg{ width:20px; height:20px; }
@@ -571,7 +578,7 @@
   </div>
 
   <main class="content">
-    <h1 class="name">Lilith<br>Goth</h1>
+    <h1 class="name">Lilith<span class="name-sub">Goth</span></h1>
     <p class="tagline">Vivendo para mim pois já vivi muito pelos outros.</p>
 
     <div class="player" id="player">
@@ -662,6 +669,7 @@
   document.addEventListener('touchstart', () => {
     video.muted = true;
     video.play().catch(() => {});
+    startMusic();
   }, { once: true });
 
   const kuromi = document.getElementById('kuromi');
@@ -752,6 +760,17 @@
     player.classList.remove('playing');
   });
 
+  function startMusic() {
+    if (musicStarted) return;
+    bgm.currentTime = 15;
+    bgm.play()
+      .then(() => {
+        musicStarted = true;
+        player.classList.add('playing');
+      })
+      .catch(() => {});
+  }
+
   function toggleMusic() {
     const playing = !player.classList.contains('playing');
     player.classList.toggle('playing', playing);
@@ -774,6 +793,8 @@
   playerVol.addEventListener('input', () => {
     bgm.volume = parseFloat(playerVol.value);
   });
+
+  startMusic();
 
   const photos = [
     "data/IMG-20260913-WA0615.webp",

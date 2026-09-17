@@ -122,16 +122,22 @@ function isLegacyCounter(m) {
 
 async function readOrCreate() {
   const list = await discordFetch(`/channels/${CHANNEL_ID}/messages?limit=20`);
-  if (list.ok) {
-    const messages = await list.json();
-    const v2 = messages.find((m) => m.author && m.author.id === BOT_ID && hasCustomId(m.components, RESET_CUSTOM_ID));
-    if (v2) return v2;
+  if (!list.ok) {
+    throw new Error('list ' + list.status);
+  }
+  const messages = await list.json();
+  const v2s = messages.filter((m) => m.author && m.author.id === BOT_ID && hasCustomId(m.components, RESET_CUSTOM_ID));
+  for (let i = 1; i < v2s.length; i++) {
+    try {
+      await discordFetch(`/channels/${CHANNEL_ID}/messages/${v2s[i].id}`, { method: 'DELETE' });
+    } catch (e) {}
+  }
+  if (v2s.length) return v2s[0];
 
-    for (const legacy of messages.filter(isLegacyCounter)) {
-      try {
-        await discordFetch(`/channels/${CHANNEL_ID}/messages/${legacy.id}`, { method: 'DELETE' });
-      } catch (e) {}
-    }
+  for (const legacy of messages.filter(isLegacyCounter)) {
+    try {
+      await discordFetch(`/channels/${CHANNEL_ID}/messages/${legacy.id}`, { method: 'DELETE' });
+    } catch (e) {}
   }
   const created = await discordFetch(`/channels/${CHANNEL_ID}/messages`, {
     method: 'POST',

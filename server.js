@@ -59,6 +59,11 @@ const server = http.createServer((req, res) => {
     res.end('Forbidden');
     return;
   }
+  if (path.basename(filePath).startsWith('.')) {
+    res.writeHead(403);
+    res.end('Forbidden');
+    return;
+  }
   const ext = path.extname(filePath).toLowerCase();
   const contentType = mimeTypes[ext] || 'application/octet-stream';
 

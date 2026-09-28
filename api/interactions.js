@@ -3,6 +3,8 @@ const { resetCounters, RESET_CUSTOM_ID, EPHEMERAL } = require('./_discord.js');
 
 const PUBLIC_KEY = process.env.PUBLIC_KEY;
 
+const TS_MAX_AGE_SEC = 5 * 60;
+
 function readRawBody(req) {
   return new Promise((resolve, reject) => {
     if (!req || typeof req.on !== 'function') {
@@ -65,6 +67,12 @@ module.exports = async function handler(req, res) {
   if (signature && timestamp) {
     if (!PUBLIC_KEY) {
       res.status(500).json({ error: 'PUBLIC_KEY not configured' });
+      return;
+    }
+    const ts = parseInt(timestamp, 10);
+    const ageSec = Math.abs(Date.now() / 1000 - ts);
+    if (isNaN(ts) || ageSec > TS_MAX_AGE_SEC) {
+      res.status(401).json({ error: 'stale timestamp' });
       return;
     }
     if (!isValidSignature(signature, timestamp, rawBuf)) {

@@ -7,6 +7,7 @@ const IP_DAY_MS = 24 * 60 * 60 * 1000;
 const IP_DAY_CAP = 48;
 const IP_MAP_CAP = 6000;
 const GLOBAL_ALERT_MS = 1500;
+const MAX_BODY_BYTES = 16 * 1024;
 
 const ipMap = new Map();
 let globalLastAlertAt = 0;
@@ -31,10 +32,16 @@ function readBody(req) {
       resolve('');
       return;
     }
-    let data = '';
-    req.on('data', (c) => (data += c));
-    req.on('end', () => resolve(data));
-    req.on('error', () => resolve(''));
+    const chunks = [];
+    let size = 0;
+    let overflow = false;
+    req.on('data', (c) => {
+      size += c.length;
+      if (size <= MAX_BODY_BYTES) chunks.push(c);
+      else overflow = true;
+    });
+    req.on('end', () => resolve({ text: Buffer.concat(chunks).toString('utf8'), overflow }));
+    req.on('error', () => resolve({ text: '', overflow: false }));
   });
 }
 
@@ -93,9 +100,13 @@ module.exports = async function handler(req, res) {
     }
 
     const raw = await readBody(req);
+    if (raw.overflow) {
+      res.status(413).json({ error: 'body too large' });
+      return;
+    }
     let browser = {};
     try {
-      browser = JSON.parse(raw || '{}');
+      browser = JSON.parse(raw.text || '{}');
     } catch (e) {
       browser = {};
     }

@@ -40,6 +40,10 @@ const server = http.createServer((req, res) => {
   const urlPath = (req.url || '/').split('?')[0];
   const shimRes = { status: (code) => ({ json: (body) => apiRespond(res, code, body) }) };
 
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+
   if (urlPath === '/api/visit') {
     visitHandler(req, shimRes);
     return;

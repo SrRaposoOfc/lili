@@ -141,7 +141,7 @@ async function readOrCreate() {
   }
   const created = await discordFetch(`/channels/${CHANNEL_ID}/messages`, {
     method: 'POST',
-    body: JSON.stringify({ flags: V2_FLAG, components: counterComponents({ count: 0, lastTs: 0, instagram: 0, discord: 0, outros: 0 }) }),
+    body: JSON.stringify({ flags: V2_FLAG, components: counterComponents({ count: 0, lastTs: 0, instagram: 0, discord: 0, outros: 0 }), allowed_mentions: { parse: [] } }),
   });
   if (!created.ok) throw new Error('create message ' + created.status);
   return created.json();
@@ -251,6 +251,7 @@ async function sendAccessInfo(info) {
           fields,
           footer: { text: 'xleav.lol' },
         }],
+        allowed_mentions: { parse: [] },
       }),
     });
     return res.ok;

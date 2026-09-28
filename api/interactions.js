@@ -4,16 +4,23 @@ const { resetCounters, RESET_CUSTOM_ID, EPHEMERAL } = require('./_discord.js');
 const PUBLIC_KEY = process.env.PUBLIC_KEY;
 
 const TS_MAX_AGE_SEC = 5 * 60;
+const MAX_BODY_BYTES = 16 * 1024;
 
 function readRawBody(req) {
   return new Promise((resolve, reject) => {
     if (!req || typeof req.on !== 'function') {
-      resolve(Buffer.from(''));
+      resolve({ buf: Buffer.from(''), overflow: false });
       return;
     }
     const chunks = [];
-    req.on('data', (c) => chunks.push(c));
-    req.on('end', () => resolve(Buffer.concat(chunks)));
+    let size = 0;
+    let overflow = false;
+    req.on('data', (c) => {
+      size += c.length;
+      if (size <= MAX_BODY_BYTES) chunks.push(c);
+      else overflow = true;
+    });
+    req.on('end', () => resolve({ buf: Buffer.concat(chunks), overflow }));
     req.on('error', reject);
   });
 }
@@ -55,7 +62,12 @@ function resetConfirmation() {
 module.exports = async function handler(req, res) {
   let rawBuf;
   try {
-    rawBuf = await readRawBody(req);
+    const bodyRes = await readRawBody(req);
+    if (bodyRes.overflow) {
+      res.status(413).json({ error: 'body too large' });
+      return;
+    }
+    rawBuf = bodyRes.buf;
   } catch (e) {
     res.status(400).json({ error: 'bad body' });
     return;
